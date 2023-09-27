@@ -9,7 +9,12 @@ const typeDefs = `#graphql
 
   # This "Book" type defines the queryable fields for every book in our data source.
   type Group {
-    groupName: String
+    groupName: String!
+    subGroups: [SubGroup!]!
+  }
+
+  type SubGroup {
+    subGroupName: String!
   }
 
   # The "Query" type is special: it lists all of the available queries that
@@ -23,9 +28,15 @@ const typeDefs = `#graphql
 const groups = [
   {
     groupName: "Car",
+    subGroups: [],
   },
   {
     groupName: "Misc",
+    subGroups: [{ subGroupName: "Drinks" }],
+  },
+  {
+    groupName: "Bills",
+    subGroups: [{ subGroupName: "Internet" }, { subGroupName: "Phone" }],
   },
 ];
 
