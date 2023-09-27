@@ -2,6 +2,7 @@ import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { BudgetGroup } from "./mongoose.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -21,44 +22,73 @@ mongoose.connection.on("connected", () => {
 const typeDefs = `#graphql
   # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
 
-  # This "Book" type defines the queryable fields for every book in our data source.
-  type Group {
-    groupName: String!
-    subGroups: [SubGroup!]!
+  type Expense {
+    name: String
+    value: Float
+    group: String
+    subgroup: BudgetGroup
+    timestamp: String
   }
 
-  type SubGroup {
-    subGroupName: String!
+  type BudgetGroup {
+    _id: ID
+    name: String
+    subgroups: [BudgetGroup]
   }
 
-  # The "Query" type is special: it lists all of the available queries that
-  # clients can execute, along with the return type for each. In this
-  # case, the "books" query returns an array of zero or more Books (defined above).
+  type User {
+    _id: ID
+    username: String
+    password: String
+    expenses: [Expense]
+    budgetGroups: [BudgetGroup]
+  }
+
   type Query {
-    groups: [Group]
+    groups: [BudgetGroup]
+  }
+
+  type Mutation {
+    createGroup(groupName: String!): BudgetGroup
   }
 `;
-
-const groups = [
-  {
-    groupName: "Car",
-    subGroups: [],
-  },
-  {
-    groupName: "Misc",
-    subGroups: [{ subGroupName: "Drinks" }],
-  },
-  {
-    groupName: "Bills",
-    subGroups: [{ subGroupName: "Internet" }, { subGroupName: "Phone" }],
-  },
-];
 
 // Resolvers define how to fetch the types defined in your schema.
 // This resolver retrieves books from the "books" array above.
 const resolvers = {
   Query: {
-    groups: () => groups,
+    groups: async () => {
+      try {
+        // Use Mongoose to fetch all budget groups from the database
+        const groups = await BudgetGroup.find().exec();
+        console.log("groups :>> ", groups);
+        return groups;
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+        throw error; // You can handle the error as needed
+      }
+    },
+  },
+  Mutation: {
+    createGroup: async (_, { groupName }) => {
+      try {
+        // console.log("groupName :>> ", groupName);
+        // Create a new BudgetGroup instance
+        const newGroup = new BudgetGroup({ name: groupName, subgroups: [] });
+
+        // console.log("newGroup :>> ", newGroup);
+
+        // Save the new group to the database
+        const savedGroup = await newGroup.save();
+
+        // console.log("savedGroup :>> ", savedGroup);
+
+        return savedGroup;
+      } catch (error) {
+        console.error("Error creating group:", error);
+        throw error; // You can handle the error as needed
+      }
+    },
   },
 };
 
